@@ -77,7 +77,7 @@ export default function AddPage() {
           }),
         );
 
-        setScannedItems(drafts);
+        setScannedItems((prev) => [...prev, ...drafts]);
         setMode("review");
         toast.success(`Found ${drafts.length} item${drafts.length !== 1 ? "s" : ""}`);
       } catch (err) {
