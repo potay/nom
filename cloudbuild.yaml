@@ -1,3 +1,6 @@
+substitutions:
+  _TAG: latest
+
 steps:
   - name: "gcr.io/cloud-builders/docker"
     args:
@@ -15,13 +18,13 @@ steps:
       - "--build-arg"
       - "NEXT_PUBLIC_FIREBASE_APP_ID=${_FIREBASE_APP_ID}"
       - "-t"
-      - "us-central1-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/nom:$COMMIT_SHA"
+      - "us-central1-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/nom:${_TAG}"
       - "."
 
   - name: "gcr.io/cloud-builders/docker"
     args:
       - "push"
-      - "us-central1-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/nom:$COMMIT_SHA"
+      - "us-central1-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/nom:${_TAG}"
 
   - name: "gcr.io/google.com/cloudsdktool/cloud-sdk"
     entrypoint: gcloud
@@ -30,7 +33,7 @@ steps:
       - "deploy"
       - "nom"
       - "--image"
-      - "us-central1-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/nom:$COMMIT_SHA"
+      - "us-central1-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/nom:${_TAG}"
       - "--region"
       - "us-central1"
       - "--set-env-vars"
@@ -46,7 +49,7 @@ steps:
       - "2"
 
 images:
-  - "us-central1-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/nom:$COMMIT_SHA"
+  - "us-central1-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/nom:${_TAG}"
 
 options:
   logging: CLOUD_LOGGING_ONLY
