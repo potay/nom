@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 48" fill="none">
+  <!-- Leaf accent tucked behind the "n" -->
+  <path d="M14 34c0 0 3-12 14-20c6-4.5 14-6 14-6s-4 8-10 14c-4 4-10 7-14 9l-1.5 1.5" stroke="#52B788" stroke-width="2" stroke-linecap="round" fill="none" opacity="0.5"/>
+  <path d="M20 26c2-3 5-5.5 8-7" stroke="#52B788" stroke-width="1.2" stroke-linecap="round" fill="none" opacity="0.4"/>
+  <!-- "nom" wordmark in italic serif style -->
+  <text x="8" y="36" font-family="Georgia, 'Times New Roman', serif" font-size="36" font-weight="600" font-style="italic" fill="#2D6A4F" letter-spacing="-1">nom</text>
+</svg>
