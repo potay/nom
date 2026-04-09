@@ -23,7 +23,7 @@ export function BottomNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-border/60 bg-background/80 backdrop-blur-xl">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-border/60 bg-background/80 backdrop-blur-xl pb-[env(safe-area-inset-bottom)]">
       <div className="mx-auto grid max-w-lg grid-cols-5 py-1">
         {NAV_ITEMS.map(({ href, label, icon: Icon, ...rest }) => {
           const isActive =
