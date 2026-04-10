@@ -127,30 +127,7 @@ export default function AddPage() {
 
     setSaving(true);
     try {
-      // Upload unique images and build a batchId -> URL map
-      const imageUrls = new Map<string, string>();
-      if (household) {
-        const batchIds = new Set(
-          validItems.map((item) => item.scanBatchId).filter(Boolean) as string[],
-        );
-        await Promise.all(
-          Array.from(batchIds).map(async (batchId) => {
-            const img = capturedImages.get(batchId);
-            if (!img) return;
-            try {
-              const url = await uploadScanImage(
-                household.id,
-                img.base64,
-                img.mimeType,
-              );
-              imageUrls.set(batchId, url);
-            } catch (err) {
-              console.error("Failed to upload image for batch", batchId, err);
-            }
-          }),
-        );
-      }
-
+      // Save items immediately without waiting for image upload
       const inputs: CreateItemInput[] = validItems.map((item) => ({
         name: item.name.trim(),
         category: item.category,
@@ -158,9 +135,7 @@ export default function AddPage() {
         unit: item.unit,
         expirationDate: new Date(item.expirationDate + "T00:00:00"),
         notes: "",
-        imageUrl: item.scanBatchId
-          ? imageUrls.get(item.scanBatchId) ?? null
-          : null,
+        imageUrl: null,
       }));
 
       await addItems(inputs);
@@ -168,6 +143,21 @@ export default function AddPage() {
         `Added ${inputs.length} item${inputs.length !== 1 ? "s" : ""} to your fridge`,
       );
       router.push("/inventory");
+
+      // Upload images in background (don't block the user)
+      if (household) {
+        const batchIds = new Set(
+          validItems.map((item) => item.scanBatchId).filter(Boolean) as string[],
+        );
+        for (const batchId of batchIds) {
+          const img = capturedImages.get(batchId);
+          if (!img) continue;
+          uploadScanImage(household.id, img.base64, img.mimeType).catch(
+            (err) =>
+              console.error("Background image upload failed:", err),
+          );
+        }
+      }
     } catch {
       toast.error("Failed to save items");
     } finally {

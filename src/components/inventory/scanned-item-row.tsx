@@ -81,7 +81,9 @@ export function ScannedItemRow({ item, onChange, onRemove }: ScannedItemRowProps
               onValueChange={(v) => onChange({ ...item, category: v as Category })}
             >
               <SelectTrigger className="h-8 rounded-lg text-xs">
-                <SelectValue />
+                <SelectValue>
+                  {CATEGORY_META[item.category]?.label ?? item.category}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 {CATEGORIES.map((cat) => (
@@ -92,7 +94,7 @@ export function ScannedItemRow({ item, onChange, onRemove }: ScannedItemRowProps
               </SelectContent>
             </Select>
           </div>
-          <div className="space-y-1">
+          <div className="space-y-1 min-w-0">
             <Label className="text-[11px] text-muted-foreground">Expiration</Label>
             <Input
               type="date"
@@ -100,7 +102,7 @@ export function ScannedItemRow({ item, onChange, onRemove }: ScannedItemRowProps
               onChange={(e) =>
                 onChange({ ...item, expirationDate: e.target.value })
               }
-              className="h-8 rounded-lg text-xs"
+              className="h-8 min-w-0 rounded-lg text-xs"
             />
           </div>
           <div className="space-y-1">
