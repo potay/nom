@@ -9,8 +9,13 @@ service cloud.firestore {
     }
     match /households/{householdId} {
       allow create: if request.auth != null;
-      allow read, write: if request.auth != null
-        && request.auth.uid in resource.data.members;
+      // Allow any authed user to read (needed for invite code query when joining)
+      allow read: if request.auth != null;
+      // Allow members to update, OR allow a non-member to update if they're
+      // adding themselves (joining via invite code)
+      allow update: if request.auth != null
+        && (request.auth.uid in resource.data.members
+            || request.auth.uid in request.resource.data.members);
       match /{subcollection}/{docId} {
         allow read, write: if request.auth != null
           && request.auth.uid in get(/databases/$(database)/documents/households/$(householdId)).data.members;
