@@ -76,20 +76,45 @@ export default function RecipesPage() {
     if (!file) return;
 
     try {
-      const text = await file.text();
-      const json = JSON.parse(text);
-      const parsed = parseUmamiExport(json);
+      let allParsed: Awaited<ReturnType<typeof parseUmamiExport>> = [];
 
-      if (parsed.length === 0) {
+      if (file.name.endsWith(".zip")) {
+        // Handle ZIP of JSONs
+        const JSZip = (await import("jszip")).default;
+        const zip = await JSZip.loadAsync(file);
+        const jsonFiles = Object.values(zip.files).filter(
+          (f) => !f.dir && f.name.endsWith(".json"),
+        );
+
+        for (const jsonFile of jsonFiles) {
+          try {
+            const text = await jsonFile.async("text");
+            const json = JSON.parse(text);
+            const parsed = parseUmamiExport(json);
+            allParsed.push(...parsed);
+          } catch {
+            console.warn(`Skipping invalid JSON: ${jsonFile.name}`);
+          }
+        }
+      } else {
+        // Single JSON file
+        const text = await file.text();
+        const json = JSON.parse(text);
+        allParsed = parseUmamiExport(json);
+      }
+
+      if (allParsed.length === 0) {
         toast.error("No recipes found in this file");
         return;
       }
 
-      await importRecipes(parsed, "umami");
-      toast.success(`Imported ${parsed.length} recipe${parsed.length !== 1 ? "s" : ""}`);
+      await importRecipes(allParsed, "umami");
+      toast.success(
+        `Imported ${allParsed.length} recipe${allParsed.length !== 1 ? "s" : ""}`,
+      );
     } catch (err) {
       console.error("Import error:", err);
-      toast.error("Failed to parse recipe file. Make sure it's a JSON export.");
+      toast.error("Failed to parse file. Accepts .zip or .json from Umami.");
     }
 
     // Reset file input
@@ -181,7 +206,7 @@ export default function RecipesPage() {
         <input
           ref={fileInputRef}
           type="file"
-          accept=".json"
+          accept=".json,.zip"
           className="hidden"
           onChange={handleImport}
         />
