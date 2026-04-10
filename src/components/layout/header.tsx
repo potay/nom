@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useAuth } from "@/components/providers/auth-provider";
 import { useHousehold } from "@/components/providers/household-provider";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -32,11 +33,13 @@ export function Header() {
             </>
           )}
         </div>
-        <Avatar className="h-8 w-8 border border-border">
-          <AvatarFallback className="bg-secondary text-xs font-medium text-secondary-foreground">
-            {initials}
-          </AvatarFallback>
-        </Avatar>
+        <Link href="/settings">
+          <Avatar className="h-8 w-8 border border-border">
+            <AvatarFallback className="bg-secondary text-xs font-medium text-secondary-foreground">
+              {initials}
+            </AvatarFallback>
+          </Avatar>
+        </Link>
       </div>
     </header>
   );

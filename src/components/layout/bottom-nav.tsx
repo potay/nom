@@ -7,7 +7,7 @@ import {
   Refrigerator,
   Plus,
   ShoppingCart,
-  Settings,
+  BookOpen,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -16,7 +16,7 @@ const NAV_ITEMS = [
   { href: "/inventory", label: "Fridge", icon: Refrigerator },
   { href: "/add", label: "Add", icon: Plus, special: true },
   { href: "/shopping", label: "Shop", icon: ShoppingCart },
-  { href: "/settings", label: "Settings", icon: Settings },
+  { href: "/recipes", label: "Recipes", icon: BookOpen },
 ] as const;
 
 export function BottomNav() {
