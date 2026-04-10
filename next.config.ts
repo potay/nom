@@ -3,6 +3,10 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   output: "standalone",
   turbopack: {},
+  env: {
+    APP_VERSION: require("./package.json").version,
+    BUILD_SHA: process.env.COMMIT_SHA?.slice(0, 7) || "dev",
+  },
   headers: async () => [
     {
       // Force browsers to always revalidate the service worker file

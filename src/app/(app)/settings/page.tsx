@@ -97,6 +97,11 @@ export default function SettingsPage() {
         <LogOut className="mr-2 h-4 w-4" />
         Sign out
       </Button>
+
+      <p className="pt-2 text-center text-[11px] text-muted-foreground/50">
+        v{process.env.APP_VERSION}
+        {process.env.BUILD_SHA !== "dev" ? ` (${process.env.BUILD_SHA})` : ""}
+      </p>
     </div>
   );
 }

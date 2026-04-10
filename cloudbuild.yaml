@@ -14,6 +14,8 @@ steps:
       - "NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=${_FIREBASE_MESSAGING_SENDER_ID}"
       - "--build-arg"
       - "NEXT_PUBLIC_FIREBASE_APP_ID=${_FIREBASE_APP_ID}"
+      - "--build-arg"
+      - "COMMIT_SHA=$COMMIT_SHA"
       - "-t"
       - "us-central1-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/nom:$COMMIT_SHA"
       - "."
