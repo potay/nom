@@ -3,11 +3,13 @@
 import { useState, useMemo } from "react";
 import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { useInventory, type ItemWithStatus } from "@/lib/hooks/use-inventory";
 import { ItemCard } from "@/components/inventory/item-card";
@@ -23,6 +25,7 @@ export default function InventoryPage() {
     null,
   );
   const [editingItem, setEditingItem] = useState<ItemWithStatus | null>(null);
+  const [deletingItem, setDeletingItem] = useState<ItemWithStatus | null>(null);
 
   const filteredItems = useMemo(() => {
     let result = items;
@@ -47,9 +50,11 @@ export default function InventoryPage() {
     }
   }
 
-  async function handleDelete(id: string) {
+  async function confirmDelete() {
+    if (!deletingItem) return;
     try {
-      await removeItem(id);
+      await removeItem(deletingItem.id);
+      setDeletingItem(null);
       toast.success("Item removed");
     } catch {
       toast.error("Failed to remove item");
@@ -100,12 +105,13 @@ export default function InventoryPage() {
               key={item.id}
               item={item}
               onEdit={setEditingItem}
-              onDelete={handleDelete}
+              onDelete={setDeletingItem}
             />
           ))}
         </div>
       )}
 
+      {/* Edit dialog */}
       <Dialog
         open={editingItem !== null}
         onOpenChange={(open) => !open && setEditingItem(null)}
@@ -121,6 +127,41 @@ export default function InventoryPage() {
               submitLabel="Save changes"
             />
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete confirmation dialog */}
+      <Dialog
+        open={deletingItem !== null}
+        onOpenChange={(open) => !open && setDeletingItem(null)}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Remove item?</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to remove{" "}
+              <span className="font-medium text-foreground">
+                {deletingItem?.name}
+              </span>{" "}
+              from your fridge?
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex gap-3 pt-2">
+            <Button
+              variant="outline"
+              className="flex-1 rounded-xl"
+              onClick={() => setDeletingItem(null)}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              className="flex-1 rounded-xl"
+              onClick={confirmDelete}
+            >
+              Remove
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

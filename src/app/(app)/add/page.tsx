@@ -115,6 +115,7 @@ export default function AddPage() {
         quantity: item.quantity,
         unit: item.unit,
         expirationDate: new Date(item.expirationDate + "T00:00:00"),
+        notes: "",
       }));
 
       await addItems(inputs);

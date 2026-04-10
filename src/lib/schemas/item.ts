@@ -42,7 +42,7 @@ export const createItemSchema = z.object({
   quantity: z.coerce.number().positive("Must be positive"),
   unit: unitSchema.default("item"),
   expirationDate: z.coerce.date(),
-  notes: z.string().max(500).optional(),
+  notes: z.string().max(500).default(""),
 });
 
 export const itemSchema = createItemSchema.extend({

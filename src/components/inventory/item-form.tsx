@@ -52,7 +52,7 @@ export function ItemForm({
         quantity: Number(quantity),
         unit,
         expirationDate: new Date(expirationDate + "T00:00:00"),
-        notes: notes.trim() || undefined,
+        notes: notes.trim() || "",
       });
     } finally {
       setSubmitting(false);

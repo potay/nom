@@ -9,7 +9,7 @@ import type { ItemWithStatus } from "@/lib/hooks/use-inventory";
 type ItemCardProps = {
   item: ItemWithStatus;
   onEdit: (item: ItemWithStatus) => void;
-  onDelete: (id: string) => void;
+  onDelete: (item: ItemWithStatus) => void;
 };
 
 export function ItemCard({ item, onEdit, onDelete }: ItemCardProps) {
@@ -49,7 +49,7 @@ export function ItemCard({ item, onEdit, onDelete }: ItemCardProps) {
           variant="ghost"
           size="icon"
           className="h-8 w-8 rounded-lg text-destructive hover:text-destructive"
-          onClick={() => onDelete(item.id)}
+          onClick={() => onDelete(item)}
         >
           <Trash2 className="h-3.5 w-3.5" />
         </Button>

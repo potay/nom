@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import {
   AlertTriangle,
@@ -10,14 +10,26 @@ import {
   Leaf,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { buttonVariants } from "@/components/ui/button";
-import { useInventory } from "@/lib/hooks/use-inventory";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { useInventory, type ItemWithStatus } from "@/lib/hooks/use-inventory";
 import { ItemCard } from "@/components/inventory/item-card";
+import { ItemForm } from "@/components/inventory/item-form";
+import type { CreateItemInput } from "@/lib/schemas/item";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
 export default function DashboardPage() {
-  const { items, loading, removeItem } = useInventory();
+  const { items, loading, updateItem, removeItem } = useInventory();
+  const [editingItem, setEditingItem] = useState<ItemWithStatus | null>(null);
+  const [deletingItem, setDeletingItem] = useState<ItemWithStatus | null>(null);
 
   const { expired, expiringSoon, totalCount } = useMemo(() => {
     const expired = items.filter((i) => i.expirationStatus === "expired");
@@ -29,9 +41,22 @@ export default function DashboardPage() {
     return { expired, expiringSoon, totalCount: items.length };
   }, [items]);
 
-  async function handleDelete(id: string) {
+  async function handleEdit(data: CreateItemInput) {
+    if (!editingItem) return;
     try {
-      await removeItem(id);
+      await updateItem(editingItem.id, data);
+      setEditingItem(null);
+      toast.success("Item updated");
+    } catch {
+      toast.error("Failed to update item");
+    }
+  }
+
+  async function confirmDelete() {
+    if (!deletingItem) return;
+    try {
+      await removeItem(deletingItem.id);
+      setDeletingItem(null);
       toast.success("Item removed");
     } catch {
       toast.error("Failed to remove item");
@@ -110,9 +135,7 @@ export default function DashboardPage() {
             <div className="flex h-6 w-6 items-center justify-center rounded-md bg-warm/15">
               <Clock className="h-3.5 w-3.5 text-warm" />
             </div>
-            <h2 className="text-sm font-semibold">
-              Expiring soon
-            </h2>
+            <h2 className="text-sm font-semibold">Expiring soon</h2>
             <span className="rounded-full bg-warm/10 px-2 py-0.5 text-[11px] font-medium text-warm-foreground">
               {expiringSoon.length}
             </span>
@@ -122,8 +145,8 @@ export default function DashboardPage() {
               <ItemCard
                 key={item.id}
                 item={item}
-                onEdit={() => {}}
-                onDelete={handleDelete}
+                onEdit={setEditingItem}
+                onDelete={setDeletingItem}
               />
             ))}
             {expiringSoon.length > 5 && (
@@ -148,9 +171,7 @@ export default function DashboardPage() {
             <div className="flex h-6 w-6 items-center justify-center rounded-md bg-destructive/10">
               <AlertTriangle className="h-3.5 w-3.5 text-destructive" />
             </div>
-            <h2 className="text-sm font-semibold">
-              Expired
-            </h2>
+            <h2 className="text-sm font-semibold">Expired</h2>
             <span className="rounded-full bg-destructive/10 px-2 py-0.5 text-[11px] font-medium text-destructive">
               {expired.length}
             </span>
@@ -160,8 +181,8 @@ export default function DashboardPage() {
               <ItemCard
                 key={item.id}
                 item={item}
-                onEdit={() => {}}
-                onDelete={handleDelete}
+                onEdit={setEditingItem}
+                onDelete={setDeletingItem}
               />
             ))}
             {expired.length > 5 && (
@@ -189,7 +210,8 @@ export default function DashboardPage() {
             Your fridge is empty
           </p>
           <p className="mt-1 max-w-[240px] text-sm text-muted-foreground">
-            Add items to start tracking what&apos;s fresh and what needs replacing
+            Add items to start tracking what&apos;s fresh and what needs
+            replacing
           </p>
           <Link
             href="/add"
@@ -200,6 +222,60 @@ export default function DashboardPage() {
           </Link>
         </div>
       )}
+
+      {/* Edit dialog */}
+      <Dialog
+        open={editingItem !== null}
+        onOpenChange={(open) => !open && setEditingItem(null)}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit item</DialogTitle>
+          </DialogHeader>
+          {editingItem && (
+            <ItemForm
+              defaultValues={editingItem}
+              onSubmit={handleEdit}
+              submitLabel="Save changes"
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete confirmation dialog */}
+      <Dialog
+        open={deletingItem !== null}
+        onOpenChange={(open) => !open && setDeletingItem(null)}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Remove item?</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to remove{" "}
+              <span className="font-medium text-foreground">
+                {deletingItem?.name}
+              </span>{" "}
+              from your fridge?
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex gap-3 pt-2">
+            <Button
+              variant="outline"
+              className="flex-1 rounded-xl"
+              onClick={() => setDeletingItem(null)}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              className="flex-1 rounded-xl"
+              onClick={confirmDelete}
+            >
+              Remove
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
