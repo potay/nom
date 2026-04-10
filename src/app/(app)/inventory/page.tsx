@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { Search } from "lucide-react";
+import { Search, ArrowDownAZ, Clock, Tag } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -15,8 +15,57 @@ import { useInventory, type ItemWithStatus } from "@/lib/hooks/use-inventory";
 import { ItemCard } from "@/components/inventory/item-card";
 import { ItemForm } from "@/components/inventory/item-form";
 import { CategoryFilter } from "@/components/inventory/category-filter";
+import { CATEGORY_META } from "@/lib/utils/categories";
 import type { Category, CreateItemInput } from "@/lib/schemas/item";
+import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+
+type SortMode = "name" | "expiration" | "category";
+
+const SORT_OPTIONS: { value: SortMode; label: string; icon: typeof ArrowDownAZ }[] = [
+  { value: "name", label: "Name", icon: ArrowDownAZ },
+  { value: "expiration", label: "Expiry", icon: Clock },
+  { value: "category", label: "Category", icon: Tag },
+];
+
+function sortItems(items: ItemWithStatus[], mode: SortMode): ItemWithStatus[] {
+  const sorted = [...items];
+  switch (mode) {
+    case "name":
+      return sorted.sort((a, b) => a.name.localeCompare(b.name));
+    case "expiration":
+      return sorted.sort(
+        (a, b) => a.expirationDate.getTime() - b.expirationDate.getTime(),
+      );
+    case "category":
+      return sorted.sort((a, b) => {
+        const cmp = a.category.localeCompare(b.category);
+        return cmp !== 0 ? cmp : a.name.localeCompare(b.name);
+      });
+  }
+}
+
+/** Find items with similar names (potential duplicates). */
+function findDuplicateGroups(items: ItemWithStatus[]): Map<string, ItemWithStatus[]> {
+  const groups = new Map<string, ItemWithStatus[]>();
+  for (const item of items) {
+    const key = item.name.toLowerCase().trim();
+    const existing = groups.get(key);
+    if (existing) {
+      existing.push(item);
+    } else {
+      groups.set(key, [item]);
+    }
+  }
+  // Only return groups with 2+ items
+  const dupes = new Map<string, ItemWithStatus[]>();
+  for (const [key, group] of groups) {
+    if (group.length > 1) {
+      dupes.set(key, group);
+    }
+  }
+  return dupes;
+}
 
 export default function InventoryPage() {
   const { items, loading, updateItem, removeItem } = useInventory();
@@ -24,8 +73,20 @@ export default function InventoryPage() {
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(
     null,
   );
+  const [sortMode, setSortMode] = useState<SortMode>("name");
   const [editingItem, setEditingItem] = useState<ItemWithStatus | null>(null);
   const [deletingItem, setDeletingItem] = useState<ItemWithStatus | null>(null);
+
+  const duplicateGroups = useMemo(() => findDuplicateGroups(items), [items]);
+  const duplicateIds = useMemo(() => {
+    const ids = new Set<string>();
+    for (const group of duplicateGroups.values()) {
+      for (const item of group) {
+        ids.add(item.id);
+      }
+    }
+    return ids;
+  }, [duplicateGroups]);
 
   const filteredItems = useMemo(() => {
     let result = items;
@@ -36,8 +97,8 @@ export default function InventoryPage() {
       const q = searchQuery.toLowerCase();
       result = result.filter((item) => item.name.toLowerCase().includes(q));
     }
-    return result;
-  }, [items, selectedCategory, searchQuery]);
+    return sortItems(result, sortMode);
+  }, [items, selectedCategory, searchQuery, sortMode]);
 
   async function handleEdit(data: CreateItemInput) {
     if (!editingItem) return;
@@ -70,7 +131,7 @@ export default function InventoryPage() {
   }
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-4">
       <h1 className="font-heading text-2xl font-semibold italic tracking-tight">
         Fridge inventory
       </h1>
@@ -85,10 +146,41 @@ export default function InventoryPage() {
         />
       </div>
 
-      <CategoryFilter
-        selected={selectedCategory}
-        onSelect={setSelectedCategory}
-      />
+      {/* Sort + category row */}
+      <div className="space-y-3">
+        <div className="flex items-center gap-1.5">
+          <span className="mr-1 text-xs text-muted-foreground">Sort:</span>
+          {SORT_OPTIONS.map(({ value, label, icon: Icon }) => (
+            <button
+              key={value}
+              onClick={() => setSortMode(value)}
+              className={cn(
+                "flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-medium transition-all",
+                sortMode === value
+                  ? "bg-primary text-primary-foreground shadow-sm"
+                  : "bg-secondary text-muted-foreground hover:text-foreground",
+              )}
+            >
+              <Icon className="h-3 w-3" />
+              {label}
+            </button>
+          ))}
+        </div>
+        <CategoryFilter
+          selected={selectedCategory}
+          onSelect={setSelectedCategory}
+        />
+      </div>
+
+      {/* Duplicate warning */}
+      {duplicateGroups.size > 0 && !searchQuery && !selectedCategory && (
+        <div className="rounded-xl border border-warm/30 bg-warm/5 px-3 py-2 text-xs text-warm-foreground">
+          <span className="font-medium">
+            {duplicateGroups.size} potential duplicate{duplicateGroups.size !== 1 ? "s" : ""}
+          </span>
+          {" found. Items with the same name are highlighted."}
+        </div>
+      )}
 
       {filteredItems.length === 0 ? (
         <div className="py-16 text-center text-muted-foreground">
@@ -100,14 +192,17 @@ export default function InventoryPage() {
         </div>
       ) : (
         <div className="space-y-2">
-          {filteredItems.map((item) => (
-            <ItemCard
-              key={item.id}
-              item={item}
-              onEdit={setEditingItem}
-              onDelete={setDeletingItem}
-            />
-          ))}
+          {sortMode === "category"
+            ? renderGroupedByCategory(filteredItems, duplicateIds)
+            : filteredItems.map((item) => (
+                <ItemCard
+                  key={item.id}
+                  item={item}
+                  onEdit={setEditingItem}
+                  onDelete={setDeletingItem}
+                  isDuplicate={duplicateIds.has(item.id)}
+                />
+              ))}
         </div>
       )}
 
@@ -166,4 +261,43 @@ export default function InventoryPage() {
       </Dialog>
     </div>
   );
+
+  function renderGroupedByCategory(
+    sortedItems: ItemWithStatus[],
+    dupeIds: Set<string>,
+  ) {
+    const groups = new Map<Category, ItemWithStatus[]>();
+    for (const item of sortedItems) {
+      const existing = groups.get(item.category);
+      if (existing) {
+        existing.push(item);
+      } else {
+        groups.set(item.category, [item]);
+      }
+    }
+
+    return Array.from(groups.entries()).map(([category, categoryItems]) => (
+      <div key={category}>
+        <p className="mb-1.5 mt-3 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground first:mt-0">
+          {(() => {
+            const Icon = CATEGORY_META[category].icon;
+            return <Icon className="h-3.5 w-3.5" />;
+          })()}
+          {CATEGORY_META[category].label}
+          <span className="text-border">({categoryItems.length})</span>
+        </p>
+        <div className="space-y-2">
+          {categoryItems.map((item) => (
+            <ItemCard
+              key={item.id}
+              item={item}
+              onEdit={setEditingItem}
+              onDelete={setDeletingItem}
+              isDuplicate={dupeIds.has(item.id)}
+            />
+          ))}
+        </div>
+      </div>
+    ));
+  }
 }
