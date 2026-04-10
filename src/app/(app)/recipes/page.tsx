@@ -75,66 +75,43 @@ export default function RecipesPage() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const isZip =
-      file.name.toLowerCase().endsWith(".zip") ||
-      file.type === "application/zip" ||
-      file.type === "application/x-zip-compressed" ||
-      file.type === "application/octet-stream";
-
     try {
       let allParsed: Awaited<ReturnType<typeof parseUmamiExport>> = [];
 
-      // Try as ZIP first if it looks like one, otherwise try as JSON
-      if (isZip) {
-        const JSZip = (await import("jszip")).default;
-        const zip = await JSZip.loadAsync(file);
+      // Read file as ArrayBuffer (works reliably across all browsers)
+      const buffer = await file.arrayBuffer();
+      const JSZip = (await import("jszip")).default;
+
+      // Try parsing as ZIP first
+      let parsedAsZip = false;
+      try {
+        const zip = await JSZip.loadAsync(buffer);
         const jsonFiles = Object.values(zip.files).filter(
           (f) => !f.dir && f.name.toLowerCase().endsWith(".json"),
         );
 
-        if (jsonFiles.length === 0) {
-          toast.error("No JSON files found in the ZIP");
-          return;
-        }
-
-        for (const jsonFile of jsonFiles) {
-          try {
-            const text = await jsonFile.async("text");
-            const json = JSON.parse(text);
-            const parsed = parseUmamiExport(json);
-            allParsed.push(...parsed);
-          } catch (err) {
-            console.warn(`Skipping invalid JSON: ${jsonFile.name}`, err);
-          }
-        }
-      } else {
-        // Try as JSON
-        const text = await file.text();
-
-        // Maybe it's a ZIP with wrong extension - try ZIP first
-        try {
-          const JSZip = (await import("jszip")).default;
-          const zip = await JSZip.loadAsync(text);
-          const jsonFiles = Object.values(zip.files).filter(
-            (f) => !f.dir && f.name.toLowerCase().endsWith(".json"),
-          );
-          if (jsonFiles.length > 0) {
-            for (const jsonFile of jsonFiles) {
-              try {
-                const jsonText = await jsonFile.async("text");
-                const json = JSON.parse(jsonText);
-                const parsed = parseUmamiExport(json);
-                allParsed.push(...parsed);
-              } catch {
-                // skip
-              }
+        if (jsonFiles.length > 0) {
+          parsedAsZip = true;
+          for (const jsonFile of jsonFiles) {
+            try {
+              const text = await jsonFile.async("text");
+              const json = JSON.parse(text);
+              const parsed = parseUmamiExport(json);
+              allParsed.push(...parsed);
+            } catch {
+              // skip invalid JSON files
             }
           }
-        } catch {
-          // Not a ZIP, parse as JSON
-          const json = JSON.parse(text);
-          allParsed = parseUmamiExport(json);
         }
+      } catch {
+        // Not a valid ZIP, will try as JSON below
+      }
+
+      // If not a ZIP (or ZIP had no JSON files), try as plain JSON
+      if (!parsedAsZip) {
+        const text = new TextDecoder().decode(buffer);
+        const json = JSON.parse(text);
+        allParsed = parseUmamiExport(json);
       }
 
       if (allParsed.length === 0) {
@@ -148,7 +125,8 @@ export default function RecipesPage() {
       );
     } catch (err) {
       console.error("Import error:", err);
-      toast.error("Failed to parse file. Accepts .zip or .json from Umami.");
+      const msg = err instanceof Error ? err.message : String(err);
+      toast.error(`Import failed: ${msg}`);
     }
 
     // Reset file input
@@ -240,7 +218,7 @@ export default function RecipesPage() {
         <input
           ref={fileInputRef}
           type="file"
-          accept=".json,.zip,application/json,application/zip"
+          accept="*/*"
           className="hidden"
           onChange={handleImport}
         />
