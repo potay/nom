@@ -1,15 +1,18 @@
 import type { NextConfig } from "next";
-import withSerwistInit from "@serwist/next";
-
-const withSerwist = withSerwistInit({
-  swSrc: "src/app/sw.ts",
-  swDest: "public/sw.js",
-  disable: true,
-});
 
 const nextConfig: NextConfig = {
   output: "standalone",
   turbopack: {},
+  headers: async () => [
+    {
+      // Force browsers to always revalidate the service worker file
+      source: "/sw.js",
+      headers: [
+        { key: "Cache-Control", value: "no-cache, no-store, must-revalidate" },
+        { key: "Service-Worker-Allowed", value: "/" },
+      ],
+    },
+  ],
 };
 
-export default withSerwist(nextConfig);
+export default nextConfig;

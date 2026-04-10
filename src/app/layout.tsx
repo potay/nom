@@ -46,6 +46,24 @@ export default function RootLayout({
       lang="en"
       className={`${outfit.variable} ${fraunces.variable} h-full antialiased`}
     >
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.getRegistrations().then(function(registrations) {
+                  registrations.forEach(function(registration) {
+                    registration.unregister();
+                  });
+                });
+                caches.keys().then(function(names) {
+                  names.forEach(function(name) { caches.delete(name); });
+                });
+              }
+            `,
+          }}
+        />
+      </head>
       <body className="min-h-full flex flex-col font-sans">
         <AuthProvider>
           <HouseholdProvider>
