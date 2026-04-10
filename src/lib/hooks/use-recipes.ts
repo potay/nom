@@ -11,7 +11,15 @@ import {
   doc,
   Timestamp,
   writeBatch,
+  type DocumentData,
 } from "firebase/firestore";
+
+/** Remove undefined values from an object (Firestore rejects them). */
+function stripUndefined(obj: Record<string, unknown>): DocumentData {
+  return Object.fromEntries(
+    Object.entries(obj).filter(([, v]) => v !== undefined),
+  );
+}
 import { getDb } from "@/lib/firebase/config";
 import { useAuth } from "@/components/providers/auth-provider";
 import { useHousehold } from "@/components/providers/household-provider";
@@ -67,12 +75,12 @@ export function useRecipes() {
   const addRecipe = useCallback(
     async (input: CreateRecipeInput, source: RecipeSource = "manual") => {
       if (!collectionPath || !user) throw new Error("Not ready");
-      await addDoc(collection(getDb(), collectionPath), {
+      await addDoc(collection(getDb(), collectionPath), stripUndefined({
         ...input,
         source,
         addedBy: user.uid,
         createdAt: Timestamp.now(),
-      });
+      }));
     },
     [collectionPath, user],
   );
@@ -84,12 +92,12 @@ export function useRecipes() {
       const batch = writeBatch(db);
       for (const input of inputs) {
         const ref = doc(collection(db, collectionPath));
-        batch.set(ref, {
+        batch.set(ref, stripUndefined({
           ...input,
           source,
           addedBy: user.uid,
           createdAt: Timestamp.now(),
-        });
+        }));
       }
       await batch.commit();
     },
