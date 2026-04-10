@@ -34,18 +34,25 @@ type AISuggestion = {
   matchedItems: string[];
 };
 
+function ingredientMatchesInventory(
+  ingredientName: string,
+  inventoryNames: Set<string>,
+): boolean {
+  const name = ingredientName.toLowerCase();
+  for (const invName of inventoryNames) {
+    if (invName.includes(name) || name.includes(invName)) return true;
+  }
+  return false;
+}
+
 function computeMatchPercent(
   recipe: Recipe,
   inventoryNames: Set<string>,
 ): number {
   if (recipe.ingredients.length === 0) return 0;
-  const matched = recipe.ingredients.filter((ing) => {
-    const name = ing.name.toLowerCase();
-    for (const invName of inventoryNames) {
-      if (invName.includes(name) || name.includes(invName)) return true;
-    }
-    return false;
-  });
+  const matched = recipe.ingredients.filter((ing) =>
+    ingredientMatchesInventory(ing.name, inventoryNames),
+  );
   return Math.round((matched.length / recipe.ingredients.length) * 100);
 }
 
@@ -331,6 +338,23 @@ export default function RecipesPage() {
                           {recipe.source}
                         </span>
                       </div>
+                      {recipe.matchPercent > 0 && (
+                        <div className="mt-1 flex flex-wrap gap-1">
+                          {recipe.ingredients
+                            .filter((ing) =>
+                              ingredientMatchesInventory(ing.name, inventoryNames),
+                            )
+                            .slice(0, 5)
+                            .map((ing, j) => (
+                              <span
+                                key={j}
+                                className="rounded-md bg-primary/10 px-1.5 py-0.5 text-[10px] text-primary"
+                              >
+                                {ing.name}
+                              </span>
+                            ))}
+                        </div>
+                      )}
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
                       <MatchBadge percent={recipe.matchPercent} />
@@ -362,7 +386,7 @@ export default function RecipesPage() {
                           <li
                             key={j}
                             className={cn(
-                              inventoryNames.has(ing.name.toLowerCase())
+                              ingredientMatchesInventory(ing.name, inventoryNames)
                                 ? "text-primary font-medium"
                                 : "",
                             )}
