@@ -99,7 +99,7 @@ export function useInventory() {
         expirationDate: Timestamp.fromDate(input.expirationDate),
         addedBy: user.uid,
         addedByName: user.displayName || "User",
-        imageUrl: null,
+        imageUrl: input.imageUrl ?? null,
         createdAt: now,
         updatedAt: now,
       });

@@ -22,14 +22,21 @@ export function ItemCard({ item, onEdit, onDelete, isDuplicate }: ItemCardProps)
     <div
       className={cn(
         "group flex items-center gap-3 rounded-xl border bg-card p-3 transition-all hover:shadow-sm",
-        isDuplicate
-          ? "border-warm/40 bg-warm/5"
-          : "border-border/60",
+        isDuplicate ? "border-warm/40 bg-warm/5" : "border-border/60",
       )}
     >
-      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-secondary">
-        <CategoryIcon className="h-4.5 w-4.5 text-muted-foreground" />
-      </div>
+      {item.imageUrl ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={item.imageUrl}
+          alt={item.name}
+          className="h-10 w-10 shrink-0 rounded-lg object-cover"
+        />
+      ) : (
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-secondary">
+          <CategoryIcon className="h-4.5 w-4.5 text-muted-foreground" />
+        </div>
+      )}
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
           <p className="truncate text-sm font-medium">{item.name}</p>

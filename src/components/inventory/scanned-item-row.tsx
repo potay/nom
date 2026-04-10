@@ -22,6 +22,7 @@ export type ScannedItemDraft = {
   quantity: number;
   unit: Unit;
   expirationDate: string; // YYYY-MM-DD
+  scanBatchId?: string;
 };
 
 type ScannedItemRowProps = {

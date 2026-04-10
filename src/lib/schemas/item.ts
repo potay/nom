@@ -43,6 +43,7 @@ export const createItemSchema = z.object({
   unit: unitSchema.default("item"),
   expirationDate: z.coerce.date(),
   notes: z.string().max(500).default(""),
+  imageUrl: z.string().url().nullable().optional(),
 });
 
 export const itemSchema = createItemSchema.extend({

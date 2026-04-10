@@ -11,6 +11,8 @@ import {
   type ScannedItemDraft,
 } from "@/components/inventory/scanned-item-row";
 import { useInventory } from "@/lib/hooks/use-inventory";
+import { useHousehold } from "@/components/providers/household-provider";
+import { uploadScanImage } from "@/lib/firebase/storage";
 import type { CreateItemInput, Category, Unit } from "@/lib/schemas/item";
 import { CATEGORIES, UNITS } from "@/lib/schemas/item";
 import { toast } from "sonner";
@@ -31,17 +33,24 @@ function toValidUnit(raw: string): Unit {
   return UNITS.includes(raw as Unit) ? (raw as Unit) : "item";
 }
 
+type CapturedImage = { base64: string; mimeType: string };
+
 export default function AddPage() {
   const router = useRouter();
   const { addItem, addItems } = useInventory();
+  const { household } = useHousehold();
   const [mode, setMode] = useState<AddMode>("choose");
   const [scannedItems, setScannedItems] = useState<ScannedItemDraft[]>([]);
+  const [capturedImages, setCapturedImages] = useState<Map<string, CapturedImage>>(new Map());
   const [scanning, setScanning] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   const handleCapture = useCallback(
     async (imageBase64: string, mimeType: string) => {
       setMode("scanning");
       setScanning(true);
+
+      const batchId = `batch-${Date.now()}`;
 
       try {
         const response = await fetch("/api/scan", {
@@ -60,6 +69,13 @@ export default function AddPage() {
           return;
         }
 
+        // Store the image for this batch
+        setCapturedImages((prev) => {
+          const next = new Map(prev);
+          next.set(batchId, { base64: imageBase64, mimeType });
+          return next;
+        });
+
         const drafts: ScannedItemDraft[] = items.map(
           (item: {
             name: string;
@@ -68,12 +84,13 @@ export default function AddPage() {
             unit: string;
             estimatedExpirationDays: number;
           }, i: number) => ({
-            id: `scanned-${i}-${Date.now()}`,
+            id: `scanned-${i}-${batchId}`,
             name: item.name,
             category: toValidCategory(item.category),
             quantity: item.quantity || 1,
             unit: toValidUnit(item.unit),
             expirationDate: addDaysToToday(item.estimatedExpirationDays || 7),
+            scanBatchId: batchId,
           }),
         );
 
@@ -108,7 +125,32 @@ export default function AddPage() {
       return;
     }
 
+    setSaving(true);
     try {
+      // Upload unique images and build a batchId -> URL map
+      const imageUrls = new Map<string, string>();
+      if (household) {
+        const batchIds = new Set(
+          validItems.map((item) => item.scanBatchId).filter(Boolean) as string[],
+        );
+        await Promise.all(
+          Array.from(batchIds).map(async (batchId) => {
+            const img = capturedImages.get(batchId);
+            if (!img) return;
+            try {
+              const url = await uploadScanImage(
+                household.id,
+                img.base64,
+                img.mimeType,
+              );
+              imageUrls.set(batchId, url);
+            } catch (err) {
+              console.error("Failed to upload image for batch", batchId, err);
+            }
+          }),
+        );
+      }
+
       const inputs: CreateItemInput[] = validItems.map((item) => ({
         name: item.name.trim(),
         category: item.category,
@@ -116,6 +158,9 @@ export default function AddPage() {
         unit: item.unit,
         expirationDate: new Date(item.expirationDate + "T00:00:00"),
         notes: "",
+        imageUrl: item.scanBatchId
+          ? imageUrls.get(item.scanBatchId) ?? null
+          : null,
       }));
 
       await addItems(inputs);
@@ -125,6 +170,8 @@ export default function AddPage() {
       router.push("/inventory");
     } catch {
       toast.error("Failed to save items");
+    } finally {
+      setSaving(false);
     }
   }
 
@@ -278,10 +325,14 @@ export default function AddPage() {
         <Button
           className="flex-1 rounded-xl"
           onClick={handleSaveScanned}
-          disabled={scannedItems.length === 0}
+          disabled={scannedItems.length === 0 || saving}
         >
-          <PackageCheck className="mr-2 h-4 w-4" />
-          Save all
+          {saving ? (
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          ) : (
+            <PackageCheck className="mr-2 h-4 w-4" />
+          )}
+          {saving ? "Saving..." : "Save all"}
         </Button>
       </div>
     </div>
