@@ -50,13 +50,15 @@ export function ItemCard({
         </div>
       )}
       <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2">
-          <p className="truncate text-sm font-medium">{item.name}</p>
-          {isDuplicate && (
-            <span className="shrink-0 rounded-md bg-warm/15 px-1.5 py-0.5 text-[10px] font-medium text-warm-foreground">
-              dupe?
-            </span>
-          )}
+        <div className="flex items-center justify-between gap-2">
+          <p className="truncate text-sm font-medium">
+            {item.name}
+            {isDuplicate && (
+              <span className="ml-1.5 inline-block rounded-md bg-warm/15 px-1.5 py-0.5 align-middle text-[10px] font-medium text-warm-foreground">
+                dupe?
+              </span>
+            )}
+          </p>
           <ExpirationBadge
             expirationDate={item.expirationDate}
             status={item.expirationStatus}

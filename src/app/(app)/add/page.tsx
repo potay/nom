@@ -37,7 +37,7 @@ type CapturedImage = { base64: string; mimeType: string };
 
 export default function AddPage() {
   const router = useRouter();
-  const { addItem, addItems } = useInventory();
+  const { addItem, addItems, updateItem } = useInventory();
   const { household } = useHousehold();
   const [mode, setMode] = useState<AddMode>("choose");
   const [scannedItems, setScannedItems] = useState<ScannedItemDraft[]>([]);
@@ -138,13 +138,13 @@ export default function AddPage() {
         imageUrl: null,
       }));
 
-      await addItems(inputs);
+      const docIds = await addItems(inputs);
       toast.success(
         `Added ${inputs.length} item${inputs.length !== 1 ? "s" : ""} to your fridge`,
       );
       router.push("/inventory");
 
-      // Upload images in background (don't block the user)
+      // Upload images in background, then update items with the URL
       if (household) {
         const batchIds = new Set(
           validItems.map((item) => item.scanBatchId).filter(Boolean) as string[],
@@ -152,10 +152,18 @@ export default function AddPage() {
         for (const batchId of batchIds) {
           const img = capturedImages.get(batchId);
           if (!img) continue;
-          uploadScanImage(household.id, img.base64, img.mimeType).catch(
-            (err) =>
+          uploadScanImage(household.id, img.base64, img.mimeType)
+            .then((url) => {
+              // Update all items from this batch with the image URL
+              validItems.forEach((item, i) => {
+                if (item.scanBatchId === batchId && docIds[i]) {
+                  updateItem(docIds[i], { imageUrl: url }).catch(() => {});
+                }
+              });
+            })
+            .catch((err) =>
               console.error("Background image upload failed:", err),
-          );
+            );
         }
       }
     } catch {

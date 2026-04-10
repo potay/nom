@@ -91,10 +91,10 @@ export function useInventory() {
   );
 
   const addItem = useCallback(
-    async (input: CreateItemInput) => {
+    async (input: CreateItemInput): Promise<string> => {
       if (!collectionPath || !user) throw new Error("Not ready");
       const now = Timestamp.now();
-      await addDoc(collection(getDb(), collectionPath), {
+      const ref = await addDoc(collection(getDb(), collectionPath), {
         ...input,
         expirationDate: Timestamp.fromDate(input.expirationDate),
         addedBy: user.uid,
@@ -103,6 +103,7 @@ export function useInventory() {
         createdAt: now,
         updatedAt: now,
       });
+      return ref.id;
     },
     [collectionPath, user],
   );
@@ -131,8 +132,8 @@ export function useInventory() {
   );
 
   const addItems = useCallback(
-    async (inputs: CreateItemInput[]) => {
-      await Promise.all(inputs.map((input) => addItem(input)));
+    async (inputs: CreateItemInput[]): Promise<string[]> => {
+      return Promise.all(inputs.map((input) => addItem(input)));
     },
     [addItem],
   );
