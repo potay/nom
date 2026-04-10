@@ -40,6 +40,5 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# serwist generated service worker
-public/sw.js
+# serwist generated files
 public/sw.js.map
