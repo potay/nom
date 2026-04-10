@@ -1,6 +1,6 @@
 "use client";
 
-import { Trash2, Pencil } from "lucide-react";
+import { Trash2, Pencil, ShoppingCart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ExpirationBadge } from "@/components/inventory/expiration-badge";
 import { CATEGORY_META } from "@/lib/utils/categories";
@@ -11,12 +11,24 @@ type ItemCardProps = {
   item: ItemWithStatus;
   onEdit: (item: ItemWithStatus) => void;
   onDelete: (item: ItemWithStatus) => void;
+  onAddToShoppingList?: (item: ItemWithStatus) => void;
   isDuplicate?: boolean;
 };
 
-export function ItemCard({ item, onEdit, onDelete, isDuplicate }: ItemCardProps) {
+export function ItemCard({
+  item,
+  onEdit,
+  onDelete,
+  onAddToShoppingList,
+  isDuplicate,
+}: ItemCardProps) {
   const categoryMeta = CATEGORY_META[item.category];
   const CategoryIcon = categoryMeta.icon;
+  const showShopButton =
+    onAddToShoppingList &&
+    (item.expirationStatus === "expired" ||
+      item.expirationStatus === "expires_today" ||
+      item.expirationStatus === "expiring_soon");
 
   return (
     <div
@@ -58,6 +70,16 @@ export function ItemCard({ item, onEdit, onDelete, isDuplicate }: ItemCardProps)
         </p>
       </div>
       <div className="flex shrink-0 gap-0.5">
+        {showShopButton && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 rounded-lg text-primary hover:text-primary"
+            onClick={() => onAddToShoppingList(item)}
+          >
+            <ShoppingCart className="h-3.5 w-3.5" />
+          </Button>
+        )}
         <Button
           variant="ghost"
           size="icon"

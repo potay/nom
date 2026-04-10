@@ -9,10 +9,11 @@ import {
   ShoppingCart,
   BookOpen,
 } from "lucide-react";
+import { useInventory } from "@/lib/hooks/use-inventory";
 import { cn } from "@/lib/utils";
 
 const NAV_ITEMS = [
-  { href: "/dashboard", label: "Home", icon: LayoutDashboard },
+  { href: "/dashboard", label: "Home", icon: LayoutDashboard, badge: "expiring" as const },
   { href: "/inventory", label: "Fridge", icon: Refrigerator },
   { href: "/add", label: "Add", icon: Plus, special: true },
   { href: "/shopping", label: "Shop", icon: ShoppingCart },
@@ -21,6 +22,14 @@ const NAV_ITEMS = [
 
 export function BottomNav() {
   const pathname = usePathname();
+  const { items } = useInventory();
+
+  const urgentCount = items.filter(
+    (i) =>
+      i.expirationStatus === "expired" ||
+      i.expirationStatus === "expires_today" ||
+      i.expirationStatus === "expiring_soon",
+  ).length;
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-border/60 bg-background/80 backdrop-blur-xl pb-[env(safe-area-inset-bottom)]">
@@ -29,6 +38,8 @@ export function BottomNav() {
           const isActive =
             pathname === href || pathname.startsWith(`${href}/`);
           const isSpecial = "special" in rest && rest.special;
+          const showBadge =
+            "badge" in rest && rest.badge === "expiring" && urgentCount > 0;
 
           if (isSpecial) {
             return (
@@ -56,13 +67,20 @@ export function BottomNav() {
               key={href}
               href={href}
               className={cn(
-                "flex flex-col items-center justify-center gap-0.5 py-2 transition-colors",
+                "relative flex flex-col items-center justify-center gap-0.5 py-2 transition-colors",
                 isActive
                   ? "text-primary"
                   : "text-muted-foreground hover:text-foreground",
               )}
             >
-              <Icon className={cn("h-5 w-5", isActive && "stroke-[2.5]")} />
+              <div className="relative">
+                <Icon className={cn("h-5 w-5", isActive && "stroke-[2.5]")} />
+                {showBadge && (
+                  <span className="absolute -top-1.5 -right-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[9px] font-bold text-white">
+                    {urgentCount > 99 ? "99+" : urgentCount}
+                  </span>
+                )}
+              </div>
               <span className="text-[10px] font-medium">{label}</span>
             </Link>
           );

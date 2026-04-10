@@ -6,6 +6,7 @@ import { useAuth } from "@/components/providers/auth-provider";
 import { Header } from "@/components/layout/header";
 import { BottomNav } from "@/components/layout/bottom-nav";
 import { HouseholdGate } from "@/components/layout/household-gate";
+import { NotificationProvider } from "@/components/providers/notification-provider";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -30,9 +31,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex min-h-full flex-col">
       <Header />
-      <main className="mx-auto w-full max-w-lg flex-1 px-4 pb-20 pt-4">
-        <HouseholdGate>{children}</HouseholdGate>
-      </main>
+      <NotificationProvider>
+        <main className="mx-auto w-full max-w-lg flex-1 px-4 pb-20 pt-4">
+          <HouseholdGate>{children}</HouseholdGate>
+        </main>
+      </NotificationProvider>
       <BottomNav />
     </div>
   );

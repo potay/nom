@@ -20,6 +20,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { useInventory, type ItemWithStatus } from "@/lib/hooks/use-inventory";
+import { useShoppingList } from "@/lib/hooks/use-shopping-list";
 import { ItemCard } from "@/components/inventory/item-card";
 import { ItemForm } from "@/components/inventory/item-form";
 import type { CreateItemInput } from "@/lib/schemas/item";
@@ -28,6 +29,7 @@ import { toast } from "sonner";
 
 export default function DashboardPage() {
   const { items, loading, updateItem, removeItem } = useInventory();
+  const { addExpiredToList } = useShoppingList();
   const [editingItem, setEditingItem] = useState<ItemWithStatus | null>(null);
   const [deletingItem, setDeletingItem] = useState<ItemWithStatus | null>(null);
 
@@ -49,6 +51,15 @@ export default function DashboardPage() {
       toast.success("Item updated");
     } catch {
       toast.error("Failed to update item");
+    }
+  }
+
+  async function handleAddToShoppingList(item: ItemWithStatus) {
+    try {
+      await addExpiredToList(item.name, item.category);
+      toast.success(`Added ${item.name} to shopping list`);
+    } catch {
+      toast.error("Failed to add to shopping list");
     }
   }
 
@@ -147,6 +158,7 @@ export default function DashboardPage() {
                 item={item}
                 onEdit={setEditingItem}
                 onDelete={setDeletingItem}
+                onAddToShoppingList={handleAddToShoppingList}
               />
             ))}
             {expiringSoon.length > 5 && (
@@ -183,6 +195,7 @@ export default function DashboardPage() {
                 item={item}
                 onEdit={setEditingItem}
                 onDelete={setDeletingItem}
+                onAddToShoppingList={handleAddToShoppingList}
               />
             ))}
             {expired.length > 5 && (

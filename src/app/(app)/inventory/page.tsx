@@ -12,6 +12,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { useInventory, type ItemWithStatus } from "@/lib/hooks/use-inventory";
+import { useShoppingList } from "@/lib/hooks/use-shopping-list";
 import { ItemCard } from "@/components/inventory/item-card";
 import { ItemForm } from "@/components/inventory/item-form";
 import { CategoryFilter } from "@/components/inventory/category-filter";
@@ -69,6 +70,7 @@ function findDuplicateGroups(items: ItemWithStatus[]): Map<string, ItemWithStatu
 
 export default function InventoryPage() {
   const { items, loading, updateItem, removeItem } = useInventory();
+  const { addExpiredToList } = useShoppingList();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(
     null,
@@ -99,6 +101,15 @@ export default function InventoryPage() {
     }
     return sortItems(result, sortMode);
   }, [items, selectedCategory, searchQuery, sortMode]);
+
+  async function handleAddToShoppingList(item: ItemWithStatus) {
+    try {
+      await addExpiredToList(item.name, item.category);
+      toast.success(`Added ${item.name} to shopping list`);
+    } catch {
+      toast.error("Failed to add to shopping list");
+    }
+  }
 
   async function handleEdit(data: CreateItemInput) {
     if (!editingItem) return;
@@ -200,6 +211,7 @@ export default function InventoryPage() {
                   item={item}
                   onEdit={setEditingItem}
                   onDelete={setDeletingItem}
+                  onAddToShoppingList={handleAddToShoppingList}
                   isDuplicate={duplicateIds.has(item.id)}
                 />
               ))}
@@ -293,6 +305,7 @@ export default function InventoryPage() {
               item={item}
               onEdit={setEditingItem}
               onDelete={setDeletingItem}
+              onAddToShoppingList={handleAddToShoppingList}
               isDuplicate={dupeIds.has(item.id)}
             />
           ))}

@@ -15,6 +15,8 @@ steps:
       - "--build-arg"
       - "NEXT_PUBLIC_FIREBASE_APP_ID=${_FIREBASE_APP_ID}"
       - "--build-arg"
+      - "NEXT_PUBLIC_VAPID_PUBLIC_KEY=${_VAPID_PUBLIC_KEY}"
+      - "--build-arg"
       - "COMMIT_SHA=$COMMIT_SHA"
       - "-t"
       - "us-central1-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/nom:$COMMIT_SHA"
@@ -36,7 +38,7 @@ steps:
       - "--region"
       - "us-central1"
       - "--set-env-vars"
-      - "FIREBASE_ADMIN_PROJECT_ID=$PROJECT_ID,ANTHROPIC_API_KEY=${_ANTHROPIC_API_KEY}"
+      - "FIREBASE_ADMIN_PROJECT_ID=$PROJECT_ID,ANTHROPIC_API_KEY=${_ANTHROPIC_API_KEY},NEXT_PUBLIC_VAPID_PUBLIC_KEY=${_VAPID_PUBLIC_KEY},VAPID_PRIVATE_KEY=${_VAPID_PRIVATE_KEY},VAPID_SUBJECT=mailto:nom@paulchun.com"
       - "--allow-unauthenticated"
       - "--port"
       - "8080"
@@ -53,6 +55,8 @@ substitutions:
   _FIREBASE_STORAGE_BUCKET: "fattytoro.firebasestorage.app"
   _FIREBASE_MESSAGING_SENDER_ID: "1060643788581"
   _FIREBASE_APP_ID: "1:1060643788581:web:99796fff77d78f2d482ccc"
+  _VAPID_PUBLIC_KEY: "BMhL71BYZlrf0W9MldkzSbE7ZXfS_9s6Q00nr__1nmFAb-l2WIdEvnkV-MSCZm5wqN5zG8X4qaOx50a-a8Ge4_k"
+  _VAPID_PRIVATE_KEY: "9i7sKMUQQBxWOFanVFVHAF5MLPGm2gbXuXeaCcaqAj4"
   _ANTHROPIC_API_KEY: ""
 
 options:
